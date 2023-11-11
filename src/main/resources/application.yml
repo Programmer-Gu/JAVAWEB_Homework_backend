@@ -1,0 +1,30 @@
+server:
+    port: 8080
+spring:
+    datasource:
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        url: jdbc:mysql://119.3.155.20/pms-web
+        username: pms-web
+        password: wPHhHApZhcKxWZ5T
+    thymeleaf:
+        cache: false
+
+    # 发送邮件相关配置
+    mail:
+        host: smtp.qq.com # 此处使用的是qq邮箱进行邮件发送
+        port: 465
+        username: 3160202135@qq.com # 发送邮件的账号（也就是本人账号）
+        password: wobhxcqwwnxudfjd # 账号秘钥（注意不是密码！该秘钥在开启SMTP服务时会给出。）
+        default-encoding: UTF-8
+        properties:
+            mail:
+                smtp:
+                    socketFactory:
+                        class: javax.net.ssl.SSLSocketFactory
+                debug: true
+
+#阿里云OSS
+aliyun:
+    oss:
+        endpoint: https://oss-cn-shanghai.aliyuncs.com
+        bucketName: lyt-web-tlias
