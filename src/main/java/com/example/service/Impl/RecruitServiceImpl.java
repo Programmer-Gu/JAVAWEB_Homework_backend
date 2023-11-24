@@ -1,6 +1,9 @@
 package com.example.service.Impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.entity.role.Recruit;
 import com.example.mapper.RecruitMapper;
@@ -22,9 +25,7 @@ public class RecruitServiceImpl extends ServiceImpl<RecruitMapper, Recruit> impl
         return recruitMapper.closeRecruit(recruitId);
     }
 
-    public List<Recruit> getRecruitList(){
-        LambdaQueryWrapper<Recruit> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-        lambdaQueryWrapper.select(Recruit::getName, Recruit::getEmail, Recruit::getSendTime ,Recruit::getState);
-        return recruitMapper.selectList(lambdaQueryWrapper);
+    public IPage<Recruit> getRecruitList(Page<Recruit>page, LambdaQueryWrapper<Recruit>queryWrapper){
+        return recruitMapper.selectPage(page, queryWrapper);
     }
 }

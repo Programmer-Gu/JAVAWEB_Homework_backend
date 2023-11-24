@@ -1,7 +1,11 @@
 package com.example.service.Impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.entity.Article;
+import com.example.entity.role.Recruit;
 import com.example.mapper.ArticleMapper;
 import com.example.mapper.UserMapper;
 import com.example.service.ArticleService;
@@ -16,7 +20,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     @Autowired
     private ArticleMapper articleMapper;
 
-    public List<Map<String, Object>> getAllArticle(){
-        return articleMapper.selectCustomProperties();
+    public IPage<Article> getAllArticle(Page<Article> page, LambdaQueryWrapper<Article> queryWrapper){
+        return articleMapper.selectPage(page,queryWrapper);
     }
 }

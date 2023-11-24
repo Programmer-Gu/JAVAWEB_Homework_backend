@@ -1,4 +1,4 @@
-package com.example.utils;
+package com.example.utils.Servicelogic;
 
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import lombok.Data;
@@ -6,7 +6,6 @@ import lombok.Data;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 @Data

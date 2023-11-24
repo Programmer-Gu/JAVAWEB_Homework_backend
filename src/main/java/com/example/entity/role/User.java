@@ -12,7 +12,7 @@ public class User implements Serializable {
     @TableId(type = IdType.AUTO)
     private int userId;
     private String password;
-    private int authority;
+    private int authority = 10;
     private String idNumber;
     private String userName;
     private String gender;

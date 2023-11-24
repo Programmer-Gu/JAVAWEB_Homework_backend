@@ -34,8 +34,8 @@ public class MyMetaObjectHandler implements MetaObjectHandler {
         log.info("公共字段自动填充【insert】");
         log.info(metaObject.toString());
 
-        functionHash.get(metaObject.getOriginalObject().getClass().getSimpleName())
-                    .apply(metaObject);
+//        functionHash.get(metaObject.getOriginalObject().getClass().getSimpleName())
+//                    .apply(metaObject);
     }
 
     /**

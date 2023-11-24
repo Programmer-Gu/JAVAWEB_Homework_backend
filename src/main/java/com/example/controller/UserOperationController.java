@@ -1,6 +1,5 @@
 package com.example.controller;
 
-import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.example.common.Result;
@@ -8,7 +7,7 @@ import com.example.entity.role.Employee;
 import com.example.entity.role.User;
 import com.example.service.EmployeeService;
 import com.example.service.UserService;
-import com.example.utils.GenerateWrapper;
+import com.example.utils.Servicelogic.GenerateWrapper;
 import com.example.utils.JwtUtils;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
@@ -104,6 +103,9 @@ public class UserOperationController {
      */
     @PostMapping("/register")
     public Result<Object> register(HttpServletRequest req, @RequestBody User user) {
+        if( user.getUserName() == null || user.getPassword() == null){
+            return Result.error("注册信息缺失！");
+        }
         if (userNameCheck(user.getUserName())) {
             return Result.error("该名称已在本系统注册！").setCode(403);
         }
@@ -112,7 +114,7 @@ public class UserOperationController {
         User userData = new User();
         userData.setUserName(user.getUserName());
         userData.setPassword(user.getPassword());
-        userData.setAuthority(0);
+        userData.setAuthority(10);
         //6.在数据库中保存用户
         try {
             userService.save(userData);

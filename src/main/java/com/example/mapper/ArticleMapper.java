@@ -10,6 +10,4 @@ import java.util.Map;
 
 @Mapper
 public interface ArticleMapper extends BaseMapper<Article> {
-    @Select("SELECT title, date_time as dateTime, article_type as articleType FROM article")
-    List<Map<String, Object>> selectCustomProperties();
 }

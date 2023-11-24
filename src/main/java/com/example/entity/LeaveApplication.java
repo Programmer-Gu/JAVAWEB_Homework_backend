@@ -6,8 +6,8 @@ import java.util.Date;
 
 @Data
 public class LeaveApplication {
-    private int applicationID;
-    private int employeeID;
+    private int applicationId;
+    private int employeeId;
     private Date startDate;
     private Date endDate;
     private String reason;

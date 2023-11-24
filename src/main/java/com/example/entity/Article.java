@@ -7,7 +7,7 @@ import java.util.Date;
 public class Article {
     private int articleId;
     private String title;
-    private String type;
+    private String articleType;
     private Date DateTime;
     private int userId;
     private String content;

@@ -3,7 +3,7 @@ package com.example.entity;
 import lombok.Data;
 
 import java.io.Serializable;
-import java.util.Date;
+import java.sql.Timestamp;
 
 @Data
 public class Consult implements Serializable {
@@ -13,6 +13,6 @@ public class Consult implements Serializable {
     private String title;
     private String content;
     private int state;
-    private Date sendTime;
-    private Date replyTime;
+    private Timestamp sendTime;
+    private Timestamp replyTime;
 }
