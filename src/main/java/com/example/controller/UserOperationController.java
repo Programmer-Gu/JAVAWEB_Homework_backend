@@ -2,10 +2,14 @@ package com.example.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.example.common.Result;
+import com.example.entity.Attendance;
 import com.example.entity.role.Employee;
 import com.example.entity.role.User;
+import com.example.service.AttendanceService;
 import com.example.service.EmployeeService;
+import com.example.service.PositionsService;
 import com.example.service.UserService;
 import com.example.utils.Servicelogic.GenerateWrapper;
 import com.example.utils.JwtUtils;
@@ -18,6 +22,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.example.utils.Servicelogic.DateProcess.setOneDayRange;
+
 @RequestMapping("/user")
 @RestController
 @Slf4j
@@ -26,6 +32,10 @@ public class UserOperationController {
     private UserService userService;
     @Autowired
     private EmployeeService employeeService;
+    @Autowired
+    private AttendanceService attendanceService;
+    @Autowired
+    private PositionsService positionsService;
 
     /**
      * 1.用户登录操作
@@ -68,6 +78,7 @@ public class UserOperationController {
             claims.put("departmentId", employee.getDepartmentId());
             claims.put("positionsId", employee.getPositionsId());
             claims.put("academicTitleId", employee.getAcademicTitleId());
+            claims.put("salary", positionsService.getById(employee.getPositionsId()).getSalary());
         }
 
         String jwt = JwtUtils.generateJwt(claims);//jwt包含了当前登录的员工信息
@@ -91,8 +102,21 @@ public class UserOperationController {
         userData.put("gender", claims.get("gender"));
         userData.put("brithDate", claims.get("brithDate"));
         userData.put("idNumber", claims.get("idNumber"));
+        Result<Object> res = Result.success("成功返回用户信息！", userData);
 
-        return Result.success("成功返回用户信息！", userData);
+        if( claims.get("employeeId") != null ){
+            LambdaQueryWrapper<Attendance> lambdaQueryWrapper = Wrappers.lambdaQuery(Attendance.class);
+            lambdaQueryWrapper.eq(Attendance::getEmployeeId, claims.get("employeeId"));
+            long allCount = attendanceService.count(lambdaQueryWrapper);
+            setOneDayRange(lambdaQueryWrapper, null);
+            boolean ifAttendance = attendanceService.count(lambdaQueryWrapper) > 0;
+
+            res.add("isAttended", ifAttendance);
+            res.add("myAttendance", allCount);
+            res.add("salary", claims.get("salary"));
+        }
+
+        return res;
     }
 
     /**

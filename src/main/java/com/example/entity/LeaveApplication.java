@@ -10,6 +10,7 @@ public class LeaveApplication {
     private int employeeId;
     private Date startDate;
     private Date endDate;
+    private String realName;
     private String reason;
     private String status;
 }

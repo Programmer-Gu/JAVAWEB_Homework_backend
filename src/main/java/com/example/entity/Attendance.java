@@ -1,13 +1,17 @@
 package com.example.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
 import lombok.Data;
 
 import java.util.Date;
 
 @Data
 public class Attendance {
-    private int attendanceID;
-    private int employeeID;
+    @TableId(type = IdType.AUTO)
+    private int attendanceId;
+    private int employeeId;
     private Date date;
-    private String status;
+    private int status;
+    private String realName;
 }

@@ -21,8 +21,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 import static com.example.utils.Servicelogic.BaseInfoGet.getHttpServletRequestJwt;
 
 @RestController
@@ -93,12 +91,12 @@ public class RecruitController {
     }
 
     @GetMapping("/getAllRecruit/{state}/{pageNumber}")
-    public Result<Object> getAllRecruit(HttpServletRequest req,@PathVariable int state, @PathVariable int pageNumber) {
+    public Result<Object> getAllRecruit(HttpServletRequest req, @PathVariable int state, @PathVariable int pageNumber) {
         Claims claims = getHttpServletRequestJwt(req);
         if ((int) claims.get("authority") > 1) {
             return Result.error("对不起，您的权限不足！");
         }
-        if( state < 0 || state > 3){
+        if (state < 0 || state > 3) {
             return Result.error("非法路由");
         }
 
@@ -112,47 +110,67 @@ public class RecruitController {
         return Result.error("简历查询失败");
     }
 
-    @PostMapping("/passRecruitState/{ifPass}")
-    @Transactional
-    public Result<Object> passRecruitState(HttpServletRequest req, @PathVariable boolean ifPass, @RequestBody Recruit userRecruit) {
-        Claims claims = getHttpServletRequestJwt(req);
-        if ((int) claims.get("authority") > 2) {
-            return Result.error("对不起，您的权限不足！");
-        }
+    @PostMapping("/confirmContract")
+    public Result<Object> confirmContract(@RequestParam int recruitId, @RequestParam boolean ifPass){
+        LambdaQueryWrapper<Recruit> recruitLambdaQueryWrapper = Wrappers.lambdaQuery(Recruit.class);
+        recruitLambdaQueryWrapper.select(Recruit::getState, Recruit::getState, Recruit::getEmail);
+        recruitLambdaQueryWrapper.eq(Recruit::getRecruitId, recruitId);
+        Recruit recruit = recruitService.getOne(recruitLambdaQueryWrapper);
+        recruit.setState( ifPass ? recruit.getState()+1 : -1 );
 
-        String sqlMessage;
-        if (!ifPass) {
-            sqlMessage = "state = -1";
-        } else {
-            sqlMessage = "state = state + 1";
+        if( recruit.getState() != 2 ){
+            return Result.error("错误，合同未到该阶段");
         }
 
         LambdaUpdateWrapper<Recruit> recruitLambdaUpdateWrapper = Wrappers.lambdaUpdate(Recruit.class);
-        recruitLambdaUpdateWrapper.eq(Recruit::getRecruitId, userRecruit.getRecruitId()) // 假设你是根据id来定位记录
-                .setSql(sqlMessage); // "your_field"是你想要增加的字段
+        recruitLambdaUpdateWrapper.eq(Recruit::getRecruitId, recruitId); // 假设你是根据id来定位记录
+        recruitLambdaUpdateWrapper.set(Recruit::getState, recruit.getState());
+        boolean ifSuccess = recruitService.update(recruitLambdaUpdateWrapper);
+
+        if(ifSuccess){
+            return Result.success("签订成功！", null);
+        }
+        return Result.error("签订失败");
+    }
+
+    @PostMapping("/passRecruitState/{ifPass}")
+    @Transactional
+    public Result<Object> passRecruitState(HttpServletRequest req, @PathVariable boolean ifPass, @RequestBody Recruit userRecruit) {
+        LambdaQueryWrapper<Recruit> recruitLambdaQueryWrapper = Wrappers.lambdaQuery(Recruit.class);
+        recruitLambdaQueryWrapper.select(Recruit::getState, Recruit::getState, Recruit::getEmail);
+        recruitLambdaQueryWrapper.eq(Recruit::getRecruitId, userRecruit.getRecruitId());
+        Recruit recruit = recruitService.getOne(recruitLambdaQueryWrapper);
+        recruit.setState( ifPass ? recruit.getState()+1 : -1 );
+
+        Claims claims = getHttpServletRequestJwt(req);
+        if( recruit.getState() == 2){
+            return Result.success("用户未签约", null);
+        }
+        if ((int) claims.get("authority") > 2){
+            return Result.error("对不起，您的权限不足！");
+        }
+
+        LambdaUpdateWrapper<Recruit> recruitLambdaUpdateWrapper = Wrappers.lambdaUpdate(Recruit.class);
+        recruitLambdaUpdateWrapper.eq(Recruit::getRecruitId, userRecruit.getRecruitId()); // 假设你是根据id来定位记录
+        recruitLambdaUpdateWrapper.set(Recruit::getState, recruit.getState());
         boolean ifSuccess = recruitService.update(recruitLambdaUpdateWrapper);
 
         if (ifSuccess) {
-            LambdaQueryWrapper<Recruit> recruitLambdaQueryWrapper = Wrappers.lambdaQuery(Recruit.class);
-            recruitLambdaQueryWrapper.select(Recruit::getState, Recruit::getAskerId);
-            recruitLambdaQueryWrapper.eq(Recruit::getRecruitId, userRecruit.getRecruitId());
-            Recruit recruit = recruitService.getOne(recruitLambdaQueryWrapper);
-
-            LambdaUpdateWrapper<User> userLambdaUpdateWrapper = Wrappers.lambdaUpdate(User.class);
-            userLambdaUpdateWrapper.eq(User::getUserId, recruit.getAskerId()).setSql("authority = 9");
-
             if (recruit.getState() >= 4) {
+                LambdaUpdateWrapper<User> userLambdaUpdateWrapper = Wrappers.lambdaUpdate(User.class);
+                userLambdaUpdateWrapper.eq(User::getUserId, recruit.getAskerId()).setSql("authority = 9");
                 Employee employee = new Employee();
                 employee.setUserId(recruit.getAskerId());
+                employee.setRealName(recruit.getName());
                 employeeService.save(employee);
                 userService.update(userLambdaUpdateWrapper);
                 return Result.success("用户成功入职", null);
             }
 
-            if( userRecruit.getState() == 0 && userRecruit.getEmail() != null && userRecruit.getContent() != null ){
-                emailService.sendSimpleMail(recruit.getEmail(),"招聘回复" ,userRecruit.getContent());
-            }else{
-                return Result.error("用户招聘信息缺失！");
+            if (recruit.getState() == 0 && recruit.getEmail() != null && userRecruit.getContent() != null) {
+                emailService.sendSimpleMail(recruit.getEmail(), "招聘回复", userRecruit.getContent());
+            } else {
+                return Result.error("用户招聘信息缺失，邮件发送失败，但已经通过！");
             }
             return Result.success("用户该阶段通过！", null);
         }

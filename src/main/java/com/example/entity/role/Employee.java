@@ -19,4 +19,5 @@ public class Employee implements Serializable {
     private int departmentId = 0;
     private int positionsId = 0;
     private int academicTitleId = 0;
+    private String realName;
 }

@@ -8,6 +8,7 @@ import lombok.Data;
 
 @Data
 public class DetailedEmployeeInfo {
+    private String realName;
     private Employee employee;
     private Department department;
     private Positions positions;
