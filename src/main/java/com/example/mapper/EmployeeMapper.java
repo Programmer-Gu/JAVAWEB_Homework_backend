@@ -10,6 +10,7 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
 import java.util.Date;
+import java.util.List;
 
 @Mapper
 public interface EmployeeMapper extends BaseMapper<Employee> {
@@ -18,4 +19,7 @@ public interface EmployeeMapper extends BaseMapper<Employee> {
 
     @Select("Select COUNT(*) from employee inner join user on employee.user_id = user.user_id where user.gender is not null and user.gender = #{sex}")
     long sexCount(@Param("sex") String sex);
+
+    @Select("Select * from employee inner join user on employee.user_id = user.user_id where employee.retired <> 1 and TIMESTAMPDIFF(YEAR, user.birth_date, CURRENT_DATE) > 65 ")
+    List<Employee> getRetiredList();
 }

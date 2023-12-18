@@ -9,4 +9,5 @@ import java.util.List;
 
 public interface EmployeeService extends IService<Employee> {
     EmployeeGraph getEmpGraphData();
+    List<Employee> retiredList();
 }

@@ -1,9 +1,8 @@
 package com.example.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.common.Result;
 import com.example.entity.Attendance;
 import com.example.service.AttendanceService;
@@ -13,11 +12,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
 import static com.example.utils.Servicelogic.BaseInfoGet.getHttpServletRequestJwt;
+import static com.example.utils.Servicelogic.DateProcess.getOneDayDate;
 import static com.example.utils.Servicelogic.DateProcess.setOneDayRange;
 
 @RequestMapping("/employee")
@@ -35,15 +34,19 @@ public class EmployeeAttendanceController {
         }
 
         LambdaQueryWrapper<Attendance> lambdaQueryWrapper = Wrappers.lambdaQuery(Attendance.class);
-        lambdaQueryWrapper.eq(Attendance::getEmployeeId, (int)claims.get("employeeId"));
+        lambdaQueryWrapper.eq(Attendance::getEmployeeId, claims.get("employeeId"));
+        lambdaQueryWrapper.eq(Attendance::getStatus, 1);
         setOneDayRange(lambdaQueryWrapper, null);
         if( attendanceService.count(lambdaQueryWrapper) > 0 ){
             return Result.error("今日已打卡!");
         }
 
-        Attendance attendance = new Attendance();
-        attendance.setEmployeeId((int)claims.get("employeeId"));
-        boolean ifSuccess = attendanceService.save(attendance);
+        LambdaUpdateWrapper<Attendance> attendanceLambdaUpdateWrapper = Wrappers.lambdaUpdate(Attendance.class);
+        attendanceLambdaUpdateWrapper.set(Attendance::getStatus, 1);
+        attendanceLambdaUpdateWrapper.eq(Attendance::getStatus, 0);
+        attendanceLambdaUpdateWrapper.eq(Attendance::getEmployeeId, claims.get("employeeId"));
+        setOneDayRange(attendanceLambdaUpdateWrapper, null);
+        boolean ifSuccess = attendanceService.update(attendanceLambdaUpdateWrapper);
 
         if( ifSuccess ){
             return Result.success("打卡成功！", null);
@@ -52,18 +55,15 @@ public class EmployeeAttendanceController {
     }
 
     @GetMapping("/getOneDayAttendance")
-    public Result<Object> getLastWeekAttendance(HttpServletRequest req, @RequestParam int year, @RequestBody int month, @RequestParam int day){
+    public Result<Object> getLastWeekAttendance(HttpServletRequest req, @RequestParam int year, @RequestParam int month, @RequestParam int day){
         Claims claims = getHttpServletRequestJwt(req);
         if( (int)claims.get("authority") > 9 ){
             return Result.error("您没有权限");
         }
 
-        Calendar calendar = Calendar.getInstance();
-        calendar.set(Calendar.DAY_OF_MONTH, month);
-        calendar.set(Calendar.YEAR, year);
-        calendar.set(Calendar.HOUR_OF_DAY, day);
-        Date datetime = calendar.getTime();
+        Date datetime = getOneDayDate(year,month,day);
         LambdaQueryWrapper<Attendance> lambdaQueryWrapper = Wrappers.lambdaQuery(Attendance.class);
+        lambdaQueryWrapper.select(Attendance::getRealName, Attendance::getStatus);
         setOneDayRange(lambdaQueryWrapper, datetime);
         List<Attendance> resInfo = attendanceService.list(lambdaQueryWrapper);
 

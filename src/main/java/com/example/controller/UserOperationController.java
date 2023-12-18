@@ -9,7 +9,6 @@ import com.example.entity.role.Employee;
 import com.example.entity.role.User;
 import com.example.service.AttendanceService;
 import com.example.service.EmployeeService;
-import com.example.service.PositionsService;
 import com.example.service.UserService;
 import com.example.utils.Servicelogic.GenerateWrapper;
 import com.example.utils.JwtUtils;
@@ -34,8 +33,6 @@ public class UserOperationController {
     private EmployeeService employeeService;
     @Autowired
     private AttendanceService attendanceService;
-    @Autowired
-    private PositionsService positionsService;
 
     /**
      * 1.用户登录操作
@@ -78,7 +75,7 @@ public class UserOperationController {
             claims.put("departmentId", employee.getDepartmentId());
             claims.put("positionsId", employee.getPositionsId());
             claims.put("academicTitleId", employee.getAcademicTitleId());
-            claims.put("salary", positionsService.getById(employee.getPositionsId()).getSalary());
+//            claims.put("salary", positionsService.getById(employee.getPositionsId()).getSalary());
         }
 
         String jwt = JwtUtils.generateJwt(claims);//jwt包含了当前登录的员工信息
@@ -104,16 +101,17 @@ public class UserOperationController {
         userData.put("idNumber", claims.get("idNumber"));
         Result<Object> res = Result.success("成功返回用户信息！", userData);
 
-        if( claims.get("employeeId") != null ){
+        if (claims.get("employeeId") != null) {
             LambdaQueryWrapper<Attendance> lambdaQueryWrapper = Wrappers.lambdaQuery(Attendance.class);
             lambdaQueryWrapper.eq(Attendance::getEmployeeId, claims.get("employeeId"));
             long allCount = attendanceService.count(lambdaQueryWrapper);
             setOneDayRange(lambdaQueryWrapper, null);
+            lambdaQueryWrapper.eq(Attendance::getStatus, 1);
             boolean ifAttendance = attendanceService.count(lambdaQueryWrapper) > 0;
 
             res.add("isAttended", ifAttendance);
             res.add("myAttendance", allCount);
-            res.add("salary", claims.get("salary"));
+//            res.add("salary", claims.get("salary"));
         }
 
         return res;
@@ -126,8 +124,8 @@ public class UserOperationController {
      * @return result
      */
     @PostMapping("/register")
-    public Result<Object> register(HttpServletRequest req, @RequestBody User user) {
-        if( user.getUserName() == null || user.getPassword() == null){
+    public Result<Object> register(@RequestBody User user) {
+        if (user.getUserName() == null || user.getPassword() == null) {
             return Result.error("注册信息缺失！");
         }
         if (userNameCheck(user.getUserName())) {
@@ -161,7 +159,7 @@ public class UserOperationController {
         String jwt = req.getHeader("Token");
         Claims claims = JwtUtils.parseJWT(jwt);
 
-        if(!claims.get("userName").equals(user.getUserName()) && userNameCheck(user.getUserName())) {
+        if (!claims.get("userName").equals(user.getUserName()) && userNameCheck(user.getUserName())) {
             Result.error("用户的昵称已存在！");
         }
 

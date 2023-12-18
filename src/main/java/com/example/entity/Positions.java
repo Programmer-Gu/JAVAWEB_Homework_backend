@@ -12,5 +12,4 @@ public class Positions implements Serializable {
     private int positionsId;
     private String positionsName;
     private String description;
-    private float salary;
 }

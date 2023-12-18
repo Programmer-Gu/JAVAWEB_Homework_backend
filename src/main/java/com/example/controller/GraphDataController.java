@@ -48,10 +48,9 @@ public class GraphDataController {
             Date date = allMonthDays.get(i);
             LambdaQueryWrapper<Attendance> lambdaQueryWrapper = Wrappers.lambdaQuery(Attendance.class);
             setOneDayRange(lambdaQueryWrapper, date);
+            long allCount = attendanceService.count(lambdaQueryWrapper);
+            lambdaQueryWrapper.eq(Attendance::getStatus, 1);
             long attendanceCount = attendanceService.count(lambdaQueryWrapper);
-            LambdaQueryWrapper<Employee>employeeLambdaQueryWrapper = Wrappers.lambdaQuery(Employee.class);
-            employeeLambdaQueryWrapper.le(Employee::getJoinDate ,date);
-            long allCount = employeeService.count(employeeLambdaQueryWrapper);
 
             AttendanceGraph attendanceGraph = new AttendanceGraph();
             attendanceGraph.setDay(i+1);

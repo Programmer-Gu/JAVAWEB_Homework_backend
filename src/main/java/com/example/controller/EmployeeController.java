@@ -1,6 +1,7 @@
 package com.example.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.example.common.Result;
@@ -36,7 +37,7 @@ public class EmployeeController {
 
     /**
      * @param req http请求参数
-     * @return
+     * @return 获取职工个人信息
      */
     @GetMapping("/getMyEmployeeInfo")
     public Result<Object> getUserEmployeeInfo(HttpServletRequest req) {
@@ -76,6 +77,41 @@ public class EmployeeController {
         return Result.error("查询失败");
     }
 
+    @GetMapping("/getSalary")
+    public Result<Object> getSalary(HttpServletRequest req){
+        Claims claims = getHttpServletRequestJwt(req);
+        if ((int) claims.get("authority") > 9) {
+            return Result.error("对不起，您的权限不足！");
+        }
+
+        LambdaQueryWrapper<Employee> employeeLambdaQueryWrapper =Wrappers.lambdaQuery(Employee.class);
+        employeeLambdaQueryWrapper.ne(Employee::getRetired, 1);
+        employeeLambdaQueryWrapper.select(Employee::getEmployeeId, Employee::getRealName, Employee::getSalary);
+        List<Employee> getSalaryEmp = employeeService.list(employeeLambdaQueryWrapper);
+
+        if ( getSalaryEmp != null ){
+            return Result.success("获取成功", getSalaryEmp);
+        }
+        return Result.error("获取失败");
+    }
+
+    @PostMapping("/updateSalary")
+    public Result<Object> updateSalary(HttpServletRequest req, @RequestBody Employee employee){
+        Claims claims = getHttpServletRequestJwt(req);
+        if ((int) claims.get("authority") > 9) {
+            return Result.error("对不起，您的权限不足！");
+        }
+
+        LambdaUpdateWrapper<Employee> employeeLambdaUpdateWrapper = Wrappers.lambdaUpdate(Employee.class);
+        employeeLambdaUpdateWrapper.eq(Employee::getEmployeeId, employee.getEmployeeId());
+        employeeLambdaUpdateWrapper.set(Employee::getSalary, employee.getSalary());
+        boolean ifSuccess = employeeService.update(employeeLambdaUpdateWrapper);
+
+        if( ifSuccess ){
+            return Result.success("修改成功", null);
+        }
+        return Result.error("修改失败");
+    }
 
     @PatchMapping("/updateEmployee")
     public Result<Object> updateEmployeeInfo(HttpServletRequest req, @RequestBody Employee employee) {
@@ -94,6 +130,38 @@ public class EmployeeController {
         return Result.error("修改失败");
     }
 
+    @GetMapping("/retiredList")
+    public Result<Object> retireList(HttpServletRequest req){
+        Claims claims = getHttpServletRequestJwt(req);
+        if ((int) claims.get("authority") > 2) {
+            return Result.error("对不起，您的权限不足！");
+        }
+
+        List<Employee> retiredList = employeeService.retiredList();
+
+        if( retiredList != null ){
+            return Result.success("退休人获取成功！", retiredList);
+        }
+        return Result.error("获取失败");
+    }
+
+    @PostMapping("/toRetired")
+    public Result<Object> toRetired(HttpServletRequest req, @RequestBody Employee employee){
+        Claims claims = getHttpServletRequestJwt(req);
+        if ((int) claims.get("authority") > 2) {
+            return Result.error("对不起，您的权限不足！");
+        }
+
+        LambdaUpdateWrapper<Employee> employeeLambdaUpdateWrapper = Wrappers.lambdaUpdate(Employee.class);
+        employeeLambdaUpdateWrapper.eq(Employee::getEmployeeId, employee.getEmployeeId());
+        employeeLambdaUpdateWrapper.set(Employee::getRetired, 1);
+        boolean ifSuccess = employeeService.update(employeeLambdaUpdateWrapper);
+        if( ifSuccess ){
+            return Result.success(String.format("用户ID:%d，已自愿退休！", employee.getEmployeeId()), null);
+        }
+        return Result.error("退休失败！");
+    }
+
     private List<?> selectInfo(int infoId) {
         int dateClass = 3;
         if (infoId >= dateClass) {
@@ -102,7 +170,7 @@ public class EmployeeController {
 
         if (infoId == 0) {
             LambdaQueryWrapper<Positions> positionsLambdaQueryWrapper = Wrappers.lambdaQuery(Positions.class);
-            positionsLambdaQueryWrapper.select(Positions::getPositionsId, Positions::getPositionsName, Positions::getDescription, Positions::getSalary);
+            positionsLambdaQueryWrapper.select(Positions::getPositionsId, Positions::getPositionsName, Positions::getDescription);
             return positionsService.list(positionsLambdaQueryWrapper);
         } else if (infoId == 1) {
             LambdaQueryWrapper<AcademicTitle> academicTitleLambdaQueryWrapper = Wrappers.lambdaQuery(AcademicTitle.class);

@@ -1,6 +1,8 @@
 package com.example.utils.Servicelogic;
 
+import com.baomidou.mybatisplus.core.conditions.AbstractLambdaWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.example.entity.Attendance;
 
 import java.util.ArrayList;
@@ -31,7 +33,7 @@ public class DateProcess {
         return dates;
     }
 
-    public static void setOneDayRange(LambdaQueryWrapper<Attendance> lambdaQueryWrapper, Date specifyTime){
+    public static void setOneDayRange(AbstractLambdaWrapper<Attendance,?> lambdaWrapper, Date specifyTime){
         Calendar calendar = Calendar.getInstance();
         if(specifyTime != null){
             calendar.setTime(specifyTime);
@@ -49,6 +51,15 @@ public class DateProcess {
         calendar.set(Calendar.SECOND, 59);
         calendar.set(Calendar.MILLISECOND, 999);
         Date endDate = calendar.getTime();
-        lambdaQueryWrapper.between(Attendance::getDate, startDate, endDate);
+        lambdaWrapper.between(Attendance::getDate, startDate, endDate);
+    }
+
+    public static Date getOneDayDate( int year, int month, int day){
+        Calendar calendar = Calendar.getInstance();
+        // 设置年份和月份
+        calendar.set(Calendar.YEAR, year);
+        calendar.set(Calendar.MONTH, month - 1); // 注意：月份从0开始（0代表一月）
+        calendar.set(Calendar.DAY_OF_MONTH, day); // 将日期设为当月第一天
+        return calendar.getTime();
     }
 }

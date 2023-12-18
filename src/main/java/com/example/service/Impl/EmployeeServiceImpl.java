@@ -71,4 +71,8 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
         employeeGraph.setOccupation(getOccupationCount());
         return employeeGraph;
     }
+
+    public List<Employee> retiredList(){
+        return employeeMapper.getRetiredList();
+    }
 }

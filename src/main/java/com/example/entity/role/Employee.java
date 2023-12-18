@@ -20,4 +20,6 @@ public class Employee implements Serializable {
     private int positionsId = 0;
     private int academicTitleId = 0;
     private String realName;
+    private int retired = 0;
+    private double salary = 3000;
 }

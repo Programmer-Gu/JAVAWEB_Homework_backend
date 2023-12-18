@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.common.Result;
+import com.example.entity.requestDataForm.ConfirmRecruitData;
 import com.example.entity.role.Employee;
 import com.example.entity.role.Recruit;
 import com.example.entity.role.User;
@@ -103,6 +104,10 @@ public class RecruitController {
         Page<Recruit> page = new Page<>(pageNumber, 10);
         LambdaQueryWrapper<Recruit> queryWrapper = Wrappers.lambdaQuery(Recruit.class);
         queryWrapper.eq(Recruit::getState, state);
+        if( state == 2 ){
+            queryWrapper.or()
+                    .eq(Recruit::getState, 3);
+        }
         IPage<Recruit> res = recruitService.getRecruitList(page, queryWrapper);
         if (res != null) {
             return Result.success("查询所有简历成功！", res);
@@ -111,19 +116,19 @@ public class RecruitController {
     }
 
     @PostMapping("/confirmContract")
-    public Result<Object> confirmContract(@RequestParam int recruitId, @RequestParam boolean ifPass){
+    public Result<Object> confirmContract(@RequestBody ConfirmRecruitData confirmRecruitData){
         LambdaQueryWrapper<Recruit> recruitLambdaQueryWrapper = Wrappers.lambdaQuery(Recruit.class);
         recruitLambdaQueryWrapper.select(Recruit::getState, Recruit::getState, Recruit::getEmail);
-        recruitLambdaQueryWrapper.eq(Recruit::getRecruitId, recruitId);
+        recruitLambdaQueryWrapper.eq(Recruit::getRecruitId, confirmRecruitData.getRecruitId());
         Recruit recruit = recruitService.getOne(recruitLambdaQueryWrapper);
-        recruit.setState( ifPass ? recruit.getState()+1 : -1 );
 
         if( recruit.getState() != 2 ){
             return Result.error("错误，合同未到该阶段");
         }
 
+        recruit.setState( confirmRecruitData.isIfPass() ? recruit.getState()+1 : -1 );
         LambdaUpdateWrapper<Recruit> recruitLambdaUpdateWrapper = Wrappers.lambdaUpdate(Recruit.class);
-        recruitLambdaUpdateWrapper.eq(Recruit::getRecruitId, recruitId); // 假设你是根据id来定位记录
+        recruitLambdaUpdateWrapper.eq(Recruit::getRecruitId, confirmRecruitData.getRecruitId()); // 假设你是根据id来定位记录
         recruitLambdaUpdateWrapper.set(Recruit::getState, recruit.getState());
         boolean ifSuccess = recruitService.update(recruitLambdaUpdateWrapper);
 
@@ -137,10 +142,9 @@ public class RecruitController {
     @Transactional
     public Result<Object> passRecruitState(HttpServletRequest req, @PathVariable boolean ifPass, @RequestBody Recruit userRecruit) {
         LambdaQueryWrapper<Recruit> recruitLambdaQueryWrapper = Wrappers.lambdaQuery(Recruit.class);
-        recruitLambdaQueryWrapper.select(Recruit::getState, Recruit::getState, Recruit::getEmail);
+        recruitLambdaQueryWrapper.select(Recruit::getState, Recruit::getState, Recruit::getEmail, Recruit::getAskerId);
         recruitLambdaQueryWrapper.eq(Recruit::getRecruitId, userRecruit.getRecruitId());
         Recruit recruit = recruitService.getOne(recruitLambdaQueryWrapper);
-        recruit.setState( ifPass ? recruit.getState()+1 : -1 );
 
         Claims claims = getHttpServletRequestJwt(req);
         if( recruit.getState() == 2){
@@ -152,11 +156,11 @@ public class RecruitController {
 
         LambdaUpdateWrapper<Recruit> recruitLambdaUpdateWrapper = Wrappers.lambdaUpdate(Recruit.class);
         recruitLambdaUpdateWrapper.eq(Recruit::getRecruitId, userRecruit.getRecruitId()); // 假设你是根据id来定位记录
-        recruitLambdaUpdateWrapper.set(Recruit::getState, recruit.getState());
+        recruitLambdaUpdateWrapper.set(Recruit::getState, ifPass ? recruit.getState()+1 : -1 );
         boolean ifSuccess = recruitService.update(recruitLambdaUpdateWrapper);
 
         if (ifSuccess) {
-            if (recruit.getState() >= 4) {
+            if (recruit.getState() >= 3) {
                 LambdaUpdateWrapper<User> userLambdaUpdateWrapper = Wrappers.lambdaUpdate(User.class);
                 userLambdaUpdateWrapper.eq(User::getUserId, recruit.getAskerId()).setSql("authority = 9");
                 Employee employee = new Employee();
@@ -167,10 +171,12 @@ public class RecruitController {
                 return Result.success("用户成功入职", null);
             }
 
-            if (recruit.getState() == 0 && recruit.getEmail() != null && userRecruit.getContent() != null) {
-                emailService.sendSimpleMail(recruit.getEmail(), "招聘回复", userRecruit.getContent());
-            } else {
-                return Result.error("用户招聘信息缺失，邮件发送失败，但已经通过！");
+            if (recruit.getState() == 0) {
+                if( recruit.getEmail() != null && userRecruit.getContent() != null ){
+                    emailService.sendSimpleMail(recruit.getEmail(), "招聘回复", userRecruit.getContent());
+                }else {
+                    return Result.error("用户招聘信息缺失，邮件发送失败，但已经通过！");
+                }
             }
             return Result.success("用户该阶段通过！", null);
         }
